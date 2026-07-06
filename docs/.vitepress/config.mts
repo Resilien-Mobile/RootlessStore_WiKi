@@ -14,6 +14,10 @@ export default defineConfig({
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     logo: '/logo.webp',
+    editLink: {
+      pattern: 'https://github.com/Resilien-Mobile/RootlessStore_WiKi/edit/main/docs/:path',
+      text: '在 GitHub 上编辑此页面'
+    },
     socialLinks: [
       { icon: 'telegram', link: 'https://t.me/+3yjgOb4EpE5jNjFl', ariaLabel: 'Telegram' },
       { icon: 'qq', link: 'https://qun.qq.com/universal-share/share?ac=1&authKey=ZubO%2FbgKK8WWLB4933YkaBSKlUGFmx6JeZqWVanHIXJe0pi0ktWmCWWSXiQyhtta&busi_data=eyJncm91cENvZGUiOiIxMDkzOTkwMzE4IiwidG9rZW4iOiJVSzdKYURkclpQcGhUdXRNYkVURkc2dEFicHpjQXBOLytldy9qOHZndzhrSURhUEVyRWdpbWNKOFhoL2hpTTRuIiwidWluIjoiMTMwMjA2NDM5NiJ9&data=q1ZKNAEimSszcWAAYKUpb9GHdgrbg6SfwQv5PlSSDF4wfuNZmTAAOMME92lp1oWop2kilhL2Ta3-CAUzjPgIhw&svctype=4&tempid=h5_group_info', ariaLabel: 'QQ' },
@@ -43,6 +47,14 @@ export default defineConfig({
           { text: 'Plugin：运行时插件', link: '/plugin-development/client-runtime-plugin' },
           { text: 'Environment：运行时环境包', link: '/plugin-development/environment-runtime-package' },
           { text: 'Server：Market 与 Source 接口', link: '/plugin-development/server-sources-backend' }
+        ]
+      },
+      {
+        text: 'Code Brick拓展 (New)',
+        items: [
+          { text: '什么是 CodeBrick', link: '/code-brick/' },
+          { text: 'CodeBrick 的玩法大全', link: '/code-brick/playing-method' },
+          { text: 'CodeBrick Gallery', link: '/code-brick/brick-gallery' },
         ]
       },
       {
