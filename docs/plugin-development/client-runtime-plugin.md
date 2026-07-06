@@ -16,49 +16,66 @@ description: Rootless Store 在 client 层面对运行时插件的基本要求�
 ## `PluginManifest`
 
 ```kotlin
-interface PluginManifest {
+data class PluginManifestLocal(
     // 当前安装版本。
     // 建议遵循 SemVer，例如 `1.2.19`
     // 用于版本展示、更新判断和兼容性比较
-    val installedVersion: String
+    val installedVersion: String,
 
     // 插件的 UI 展示名称。
     // 这是渲染字段，不具备唯一性语义
-    val pluginRenderingName: String
+    val pluginRenderingName: String,
 
     // 插件逻辑包名。
     // 建议使用稳定的 Android 风格命名，例如：
     // `com.baidaidai.testplugin`
-    val pluginPackageName: String
+    val pluginPackageName: String,
 
     // 插件唯一 ID。
     // 推荐使用稳定高熵值，适合承担 Room 主键和跨版本识别
-    val pluginID: String
+    val pluginID: String,
 
     // 插件图标引用。
     // 允许为 `null`
     // 应存 URI 或路径引用，不应直接内嵌二进制
-    val iconURI: String?
+    val iconURI: String?,
 
     // 插件作者 / 发布者名称
-    val author: String
+    val author: String,
 
     // 插件短描述。
     // 适合列表页和详情页摘要展示
-    val pluginDescription: String
+    val pluginDescription: String,
 
     // 插件声明的最低宿主环境要求。
     // 这是声明值，不是运行时实时状态
-    val requiredEnvironment: HosterOverallStatus
+    val requiredEnvironment: HosterOverallStatus,
 
     // 插件入口。
     // 应当是包内稳定入口，例如 `index.sh`
     // 或某个二进制入口路径
-    val entryPoint: String
-}
+    val entryPoint: String,
+
+    // 插件运行模型。
+    // 一次性任务使用 `OneTime`
+    // 长时间运行或需要持续管理的任务使用 `Daemon`
+    val pluginRunModel: PluginRunModel,
+
+    // 可选 Web UI 入口。
+    // 没有 Web UI 时为 `null`
+    val webUIEntryPoint: String? = null,
+
+    // 可选的额外可执行文件声明。
+    // 路径应相对插件包根目录
+    val executableFiles: List<String>? = null
+)
 
 enum class HosterOverallStatus {
     LIMITED, PERMISSIVE, ADB, ROOTD
+}
+
+enum class PluginRunModel {
+    OneTime, Daemon
 }
 ```
 
@@ -72,7 +89,10 @@ enum class HosterOverallStatus {
   "author": "Baidaidai",
   "pluginDescription": "A test runtime plugin for Rootless Store.",
   "requiredEnvironment": "PERMISSIVE",
-  "entryPoint": "index.sh"
+  "entryPoint": "index.sh",
+  "pluginRunModel": "OneTime",
+  "webUIEntryPoint": null,
+  "executableFiles": null
 }
 ```
 
@@ -107,31 +127,20 @@ enum class HosterOverallStatus {
 - `entryPoint`
   插件入口字段。它应当始终指向包内稳定入口，例如 `index.sh`。不建议把动态命令拼接逻辑直接塞进这个字段。
 
-## 执行链路
+- `pluginRunModel`
+  插件运行模型字段。当前可用值为 `OneTime` 和 `Daemon`。
 
-当前 client 插件的执行链路，可以先按下面这条主路径理解：
+  `OneTime` 适合执行一次后结束的脚本或程序，例如清理、检测、输出一段结果。  
+  `Daemon` 适合长时间运行、需要保持后台状态或需要被停止的任务。
 
-1. 先通过 `SAF`（`Storage Access Framework`）选择插件文件。
-2. 选择完成后，将插件内容解压并拷贝到应用程序内部存储位置。
-3. 当用户开始执行时，由运行器解析 `entryPoint`，再把执行委派给 `ProcessBuilder`。
+- `webUIEntryPoint`
+  可选 Web UI 入口字段。没有 Web UI 时应写为 `null`，或在 JSON 中省略。  
+  如果插件提供 Web UI，建议指向包内 `index.html` 的相对路径，例如 `webroot/index.html`。
 
-可以把它理解成这样一条链：
+- `executableFiles`
+  可选的额外可执行文件声明。没有额外可执行目标时应写为 `null`，或在 JSON 中省略。  
+  如果插件包含多个需要执行权限的脚本或二进制文件，可以在这里声明它们相对插件包根目录的路径。
 
-```text
-SAF 选文件
--> 解压 / 拷贝到 App Internal Storage
--> 解析 entryPoint
--> 委派给 ProcessBuilder
--> 执行目标文件
-```
-
-这里 `entryPoint` 是否写对是关键条件。
-
-- 如果 `entryPoint` 没有正确指向被解压后的目标文件，应用就无法正确访问到它。
-- 如果 `entryPoint` 指到了错误路径，执行会直接落空。
-- 如果目标文件本身没有正确可执行权限，或者当前执行位置的权限不足，`ProcessBuilder` 在真正启动时就会直接失败。
-
-所以对插件作者来说，`entryPoint` 不是一个随便填的展示字段，而是整个执行链路中最敏感的入口声明之一。
 
 ## 插件包的组成
 
@@ -139,19 +148,19 @@ SAF 选文件
 
 一个标准插件包内部，至少应包含下面两类内容：
 
-1. 一个可执行目标
+1. 一个 `PluginManifest.json`
+   用于描述插件的版本、入口、运行模型、环境要求和基础元信息。
+
+2. 一个由 `entryPoint` 指向的可执行目标
    例如：
    - 一个 `ELF` 文件
    - 一个 `index.sh`
    - 或者其他可执行程序
 
-2. 一个 `PluginManifest.json`
-   用于描述插件的版本、入口、环境要求和基础元信息。
-
 也就是说，当前阶段只要一个 `ZIP` 文件中同时包含：
 
-- 可执行目标
 - `PluginManifest.json`
+- `entryPoint` 指向的可执行目标
 
 那么它就可以被视为一个相对标准的 Rootless Store Plugin 包。
 
@@ -171,11 +180,47 @@ test-plugin.zip
 └── plugin(ELF)
 ```
 
+如果插件提供 Web UI，可以增加一个 Web UI 目录，并在 `webUIEntryPoint` 中声明入口：
+
+```text
+test-plugin.zip
+├── PluginManifest.json
+├── index.sh
+└── webroot
+    └── index.html
+```
+
+如果插件包含额外的辅助可执行文件，可以通过 `executableFiles` 声明这些文件：
+
+```text
+test-plugin.zip
+├── PluginManifest.json
+├── index.sh
+└── tools
+    └── helper
+```
+
 目前 Rootless Store 只支持 `ZIP` 作为插件包格式。
+
+## 一个可能的 Demo 插件包
+
+为了帮助开发者更快理解 Rootless Store 运行时插件的最小结构，我们提供一个可能的 demo 插件包。
+
+下载并使用这个 demo 包，即视为你同意遵守 `CC BY` 协议。
+
+除测试用途外，不得将该 demo 包用于任何其他用途，包括但不限于：
+
+- 二次分发
+- 商业用途
+- 作为正式插件资源直接发布
+- 改造后作为其他项目的默认运行时插件使用
+
+下载地址：
+<a href="../demo.zip" download="demo.zip">下载 Demo 插件包</a>
 
 ## 目前的局限性
 
-### 1. `require` 环境限制
+### 1. `requiredEnvironment` 环境限制
 
 当前系统还没办法完全强制遵守插件声明的 `requiredEnvironment`。
 
@@ -196,28 +241,11 @@ test-plugin.zip
 - 根据宿主环境上下文判断执行可行性
 - 尽量把“可执行 / 不可执行 / 可降级执行”区分清楚
 
-### 3. 模式限制与加权执行
+### 3. 模式限制与可执行权限
 
-当前 `entryPoint` 默认仍然是“单文件模式”，而不是“调用链模式”。后续会逐渐扩展，但现阶段还存在这些限制：
+当前 `entryPoint` 仍然是最稳定的执行入口。即便 `executableFiles` 已经作为 Manifest 字段存在，现阶段也不应把插件设计成复杂、分散、强依赖多级调用链的结构。
 
-1. 如果要执行多个 `ELF` 或多个 `SH` 文件，通常还需要通过 `chmod` 全部做额外加权后才能运行。
-2. 目前只能稳定执行单个 `SH` 文件或单个 `ELF` 文件。
-3. 系统暂时还无法根据整个调用链，对所有相关文件执行全量的加权操作。
+如果要执行多个 `ELF` 或多个 `SH` 文件，插件作者仍然需要谨慎处理文件权限、相对路径和调用顺序。  
+推荐把主要逻辑收敛到 `entryPoint`，再由它按需要调用包内其他文件。
 
 这属于当前已经明确存在的局限性，后续阶段仍然需要继续协商和解决。
-
-## 一个可能的 Demo 插件包
-
-为了帮助开发者更快理解 Rootless Store 运行时插件的最小结构，我们提供一个可能的 demo 插件包。
-
-下载并使用这个 demo 包，即视为你同意遵守 `CC BY` 协议。
-
-除测试用途外，不得将该 demo 包用于任何其他用途，包括但不限于：
-
-- 二次分发
-- 商业用途
-- 作为正式插件资源直接发布
-- 改造后作为其他项目的默认运行时插件使用
-
-下载地址：
-<a href="../demo.zip" download="demo.zip">下载 Demo 插件包</a>
