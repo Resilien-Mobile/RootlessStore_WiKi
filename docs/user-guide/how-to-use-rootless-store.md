@@ -1,162 +1,120 @@
 ---
 title: 如何正确使用 Rootless Store
-description: 面向用户的 Rootless Store 页面导览与基础使用说明。
+description: 面向用户的 Rootless Store 使用路径、核心概念与基础判断方式。
 ---
 
 # 如何正确使用 Rootless Store
 
-第一次打开 Rootless Store 时，可以先按三个页面来理解它：
+Rootless Store 不是传统意义上的应用商店。它更像一个本地能力入口：你可以添加 Sources，安装 Plugin 和 Environment，执行脚本，也可以用 CodeBrick 保存自己的轻量操作。
 
-- `Home Screen` 负责展示设备状态与执行入口
-- `Plugin Screen` 负责管理已经安装的插件
-- `Source Screen` 负责管理已添加的源，并进入对应的 `Market`
+第一次使用时，不需要马上理解所有页面和字段。更重要的是先建立一条基本路径：先看设备状态，再准备运行环境，然后安装和执行能力。
 
-## 1. Home Screen
+## 第一次打开应该先看什么
 
-`Home Screen` 是 Rootless Store 的首页，也是整个应用的数据看板。
+第一次打开 Rootless Store，可以先从 Home 页面开始。
 
-### 顶部信息
+Home 页面不是单纯的入口页，而是设备状态看板。它会帮助你理解当前设备大概处在什么执行环境里，例如普通 App Shell、ADB / Shizuku、Root 等。
 
-顶部会显示两组基础信息：`Memory` 和 `Storage`。
+如果你只是普通使用，不需要一开始就理解所有状态。可以先记住一个原则：权限越高，能执行的能力越多，但风险也越高。
 
-- `Memory` 对应 `RAM`
-- `Storage` 对应 `ROM`
+当你准备运行更高权限的插件或脚本时，再回到这里确认当前设备状态是否满足要求。
 
-这一部分主要用来帮助你快速了解当前设备的内存和存储状态。
+## 想安装能力：先理解 Plugin 和 Environment
 
-### 左侧 Host Schedule
+Rootless Store 中有两个很重要的本地模块：Plugin 和 Environment。
 
-左侧区域是 `Host Schedule`。下面会有一个 `Badge`，其中最重要的一项是 `Overall`。
+Plugin 负责表达“要做什么”。  
+Environment 负责提供“让它怎么跑”的运行条件。
 
-点击 `Overall` 后，会打开一个新的 `Activity`，用于连接 `Shizuku` 并进行提权相关操作。
+例如，一个 Plugin 可能只是调用 `python3 main.py`。真正提供 Python 解释器和相关库的，不一定是 Plugin 自己，而可能是一个已经安装并启用的 Environment。
 
-### 中部数据看板
+所以安装插件时，可以先问自己三件事：
 
-中部是设备状态看板，当前会显示以下项目：
+- 这个 Plugin 能不能独立运行？
+- 它是否依赖某个 Environment？
+- 它声明的宿主环境要求，当前设备是否满足？
 
-- `Vision`
-- `Kernel`
-- `SELinux`
-- `Plugins`
-- `Temp`
+如果插件运行失败，不一定是插件本身坏了，也可能是缺少 Environment、权限不足，或者当前执行上下文不符合它的要求。
 
-这一部分会集中展示当前设备环境、内核状态、安全状态、插件数量和温度信息。
+## 从 Sources 和 Market 获取内容
 
-### 底部 Rootless Store 入口
+Sources 是内容来源。
 
-最下面有一个 `Rootless Store` 入口。
+添加 Source 后，可以进入对应 Market，浏览可安装的 Plugin 和 Environment。你可以把 Source 理解成“这个 Market 的入口和身份信息”，把 Market 理解成“这个来源实际展示内容的地方”。
 
-点击后会跳转到插件开发相关页面，用来帮助你进一步了解 Rootless Store 插件是如何设计和实现的。
+如果你不是从 Market 安装，而是手动导入本地 ZIP，那么这个内容会更接近 Local 来源。Local 内容不代表不好，但你需要更清楚它来自哪里、是否可信、是否适合当前设备。
 
-### 右下角执行窗口
+在使用第三方 Source 或本地 ZIP 前，建议先确认它的来源、说明和权限要求。Rootless Store 能提供管理入口，但不能替你判断每一段外部脚本是否安全。
 
-`Home Screen` 右下角始终存在一个执行窗口。
+## 运行 Plugin
 
-无论当前环境是：
+Plugin 页面用于查看、启动、停止和删除已经安装的插件。
 
-- `Enforcing`
-- `Permissive`
-- `ADB`
-- `Root`
+不同 Plugin 的运行方式可能不同：
 
-右下角的执行窗口都会保留。
+- 一次性插件更像“点击执行一次”。
+- 常驻类插件更像“打开一个开关，让它持续运行”。
 
-当前它主要承担下面两类作用：
+如果插件执行失败，优先检查三件事：
 
-- 以软件自身的名义执行
-- 作为调试入口使用
+- 当前设备环境是否满足插件要求。
+- 插件依赖的 Environment 是否已经安装并启用。
+- 插件入口和执行权限是否正确。
 
-后续这里还会继续加入更多能力，例如：
+如果一个插件依赖 ADB、Shizuku 或 Root 能力，而当前设备没有准备好对应环境，那么它很可能无法按预期运行。
 
-- `Root` 上下文切换
-- `Shizuku` 上下文切换
+## 用 CodeBrick 保存轻量操作
 
-这些功能后续都会继续收敛到这个执行窗口中。
+如果你只是想保存一段 Shell 命令，不一定需要写完整 Plugin。
 
-## 2. Plugin Screen
+CodeBrick 适合保存短小、高频、个人化的操作。它可以直接执行，也可以绑定系统快捷磁贴。绑定后，只要点击 Tile，就能触发对应脚本。
 
-`Plugin Screen` 主要用来查看和管理当前已经安装的插件。
+你可以把 CodeBrick 理解成“可保存的命令片段”。它比临时 Shell 输入更稳定，比完整 Plugin 更轻量。
 
-在这个页面中，你可以看到插件数量、插件当前状态，也可以直接完成删除操作。
+当一个 CodeBrick 变得稳定，并且开始需要版本、包结构或分发能力时，再考虑把它转换成 Plugin。
 
-### Plugin Card
+## 用 Shell 做临时调试
 
-每一个 `Plugin Card` 都会显示下面这些内容：
+Shell 更适合临时输入命令、验证环境、排查问题。
 
-1. `Plugin` 名称
-2. `Plugin` 图标
-3. `Plugin Vision`
-4. `Plugin` 作者
-5. `Plugin Source`
-6. `State`
-7. `Required`
+如果一段命令只是临时尝试，可以先放在 Shell 里执行。  
+如果一段命令会反复使用，可以保存成 CodeBrick。  
+如果一段能力需要分享给别人，或者需要长期维护，就更适合做成 Plugin。
 
-### 字段说明
+Shell、CodeBrick 和 Plugin 不是互相替代的关系，而是不同阶段的工具：
 
-- `Plugin` 名称
-  用于显示插件名称。
+- Shell 用来临时验证。
+- CodeBrick 用来保存和快速触发。
+- Plugin 用来正式沉淀和分发。
 
-- `Plugin` 图标
-  用于显示插件图标。
+## 常见问题
 
-- `Plugin Vision`
-  用于显示插件版本信息。
+### 插件为什么不能运行？
 
-- `Plugin` 作者
-  用于显示插件作者。
+通常是环境不满足、权限不足、入口错误，或者依赖的 Environment 没有安装和启用。
 
-- `Plugin Source`
-  用于显示插件来源，例如 `Official`、第三方源或 `Local`。
+可以先检查插件声明的 `requiredEnvironment`，再检查当前设备状态和 Environment 状态。
 
-- `State`
-  用于显示当前插件的执行状态，也就是当前的开关状态和运行状态，例如 `Great`、`Permission Promotion` 或其他状态。
+### 为什么同一条命令在不同地方结果不同？
 
-- `Required`
-  用于显示插件运行所需的最低环境要求。只有先满足最低要求，插件才能继续运行更高权限的内容。
+因为 App Shell、ADB Shell、Root Shell 的权限和上下文不同。
 
-### 右下角本地导入
+同一条命令在普通应用上下文、ADB 上下文和 Root 上下文中，可能访问到不同文件、拥有不同权限，也可能返回不同结果。
 
-`Plugin Screen` 右下角提供本地导入入口。
+### 什么时候应该用 CodeBrick，什么时候应该用 Plugin？
 
-如果你从这个页面直接安装插件，那么这个插件的 `Plugin Source` 会被标记为 `Local`。
+临时、个人、高频的小操作，适合用 CodeBrick。  
+稳定、可分发、需要版本管理和包结构的能力，适合做成 Plugin。
 
-### 当前限制
+### Environment 一定要安装吗？
 
-`Plugin Screen` 右上角的分类模块，也就是过滤模块，当前版本还没有完成。
+不一定。
 
-这一部分会在后续版本中补上。
+如果插件或脚本只依赖系统自带命令，可能不需要额外 Environment。  
+如果它依赖 Python、BusyBox、Node.js 或其他工具链，就可能需要先安装并启用对应 Environment。
 
-## 3. Source Screen
+### 本地 ZIP 可以直接安装吗？
 
-`Source Page` 用来展示当前已经添加的所有 Source，也是进入各个 `Market` 的入口。
+可以，但要谨慎。
 
-### 顶部操作栏
-
-`Source Page` 顶部有两个操作按钮：
-
-- 左上角是 `Edit`
-- 右上角是 `Add`
-
-### 中间部分
-
-中间区域会展示 `Source Page` 的主内容。
-
-这里会显示：
-
-- 当前 Source 列表
-- `Append Source` 的数量，也就是当前一共添加了多少个源
-
-### Source Card
-
-每一个 Source 小卡片会显示下面这些内容：
-
-- 左侧显示该 Source 的 `icon`
-- 上方显示该 Source 的名称
-- 下方显示该 Source 的端口，也就是客户端通过哪个端口与该 Source 进行请求
-
-### 点击后的跳转
-
-点击某一个 `Source Card` 后，会直接跳转到该 Source 对应的 `Market` 页面。
-
-用户可以在该 `Market` 页面中继续下载并安装插件。
-
+本地 ZIP 更依赖你自己判断来源和内容。安装前最好确认它的 Manifest、入口文件、权限要求和实际来源。
