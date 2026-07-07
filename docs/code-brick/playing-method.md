@@ -39,13 +39,33 @@ CodeBrick 的核心价值，不是让你从第一天就写一个完整插件，�
 
 Tile 绑定更适合“点一下就执行”的动作。如果一段脚本需要大量交互、需要长时间观察输出，或者执行前需要频繁修改参数，那么它通常不适合作为 Tile 入口。
 
-## 用 JSON 快速导入
+## 用 Token 快速导入
 
-CodeBrick 也可以通过 JSON 文本快速导入。
+CodeBrick 也可以通过 Token 文本快速导入。这里的 Token，本质上是一段符合 CodeBrick 接口的合法 JSON 文本。
 
 这种方式适合在不同设备之间迁移简单脚本，或者从别人那里复制一段已经整理好的 CodeBrick 配置。
 
-一个 CodeBrick JSON 通常描述三件事：
+当前 CodeBrick Token 的结构可以先理解为：
+
+```kotlin
+data class JsonCodeBrickConfig(
+    // CodeBrick 的名称。
+    val codeBrickTitle: String,
+
+    // CodeBrick 的执行上下文。
+    // 当前可用值为：LIMITED、PERMISSIVE、ADB、ROOTD
+    val codeBrickEnvironment: HosterOverallStatus,
+
+    // 实际执行的 Shell 内容。
+    val codeBrickContent: String
+)
+
+enum class HosterOverallStatus {
+    LIMITED, PERMISSIVE, ADB, ROOTD
+}
+```
+
+一个 CodeBrick Token 通常描述三件事：
 
 - `codeBrickTitle`：CodeBrick 的名称。
 - `codeBrickEnvironment`：执行上下文。
@@ -60,8 +80,6 @@ CodeBrick 也可以通过 JSON 文本快速导入。
   "codeBrickContent": "whoami"
 }
 ```
-
-JSON 导入适合保存和迁移轻量配置，但不应该被理解成正式插件分发格式。需要正式分发时，仍然应该使用 Plugin。
 
 ## 稳定后转换成 Plugin
 
