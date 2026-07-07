@@ -61,6 +61,10 @@ data class PluginManifestLocal(
     // 长时间运行或需要持续管理的任务使用 `Daemon`
     val pluginRunModel: PluginRunModel,
 
+    // 是否在 ADB 模式下绕过应用作用域的 Environment 包装。
+    // 默认值为 `false`
+    val bypassEnvironment: Boolean = false,
+
     // 可选 Web UI 入口。
     // 没有 Web UI 时为 `null`
     val webUIEntryPoint: String? = null,
@@ -91,6 +95,7 @@ enum class PluginRunModel {
   "requiredEnvironment": "PERMISSIVE",
   "entryPoint": "index.sh",
   "pluginRunModel": "OneTime",
+  "bypassEnvironment": false,
   "webUIEntryPoint": null,
   "executableFiles": null
 }
@@ -132,6 +137,19 @@ enum class PluginRunModel {
 
   `OneTime` 适合执行一次后结束的脚本或程序，例如清理、检测、输出一段结果。  
   `Daemon` 适合长时间运行、需要保持后台状态或需要被停止的任务。
+
+- `bypassEnvironment`
+  ADB 执行模式下的环境绕过字段，默认值为 `false`。
+
+  当它为 `false` 时，Rootless Store 会尽量把插件执行放进应用作用域的环境包装中。这样插件可以使用已启用 Environment 注入的 `PATH`、`LD_LIBRARY_PATH` 和环境变量，但某些原生 ADB shell 命令可能会因为进入了应用用户上下文而表现不同。
+
+  当它为 `true` 时，Rootless Store 会在 ADB 模式下绕过这层环境包装，让插件更接近普通 ADB shell 的执行语义。这个模式更适合依赖原生 ADB shell 行为的命令，但插件不能使用 Rootless Store 注入的 Environment 变量。
+
+  一般建议：
+
+  - 如果插件依赖 Environment 包提供的工具链、解释器或环境变量，保持 `false`。
+  - 如果插件主要执行原生 ADB shell 命令，例如 `cmd`、`pm`、`settings` 等，并且不依赖 Environment 注入能力，可以考虑设为 `true`。
+  - 这个字段主要影响 ADB / Shizuku 执行路径；在普通 App Shell 或 Root Shell 场景下，不应把它理解成通用权限开关。
 
 - `webUIEntryPoint`
   可选 Web UI 入口字段。没有 Web UI 时应写为 `null`，或在 JSON 中省略。  
