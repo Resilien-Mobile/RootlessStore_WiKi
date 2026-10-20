@@ -131,6 +131,83 @@ enum class ExecutionContext {
 - `env`
   环境变量表。它会被注入到 Plugin 执行和 Shell 执行环境中。当前值按字面量使用，不会自动把 `./lib`、`$ENV_ROOT` 这类路径转换成 Environment 包的实际安装路径。
 
+## Ai Agents 快捷提示词模板
+```text
+这是 RootlessStore 的 EnvironmentManifest 字段解析：
+
+data class EnvironmentManifest(
+    // 当前安装版本。
+    // 建议遵循 SemVer，例如 `3.14.0`
+    // 用于版本展示、更新判断和兼容性比较
+    val installedVersion: String,
+
+    // Environment 的 UI 展示名称。
+    // 这是渲染字段，不具备唯一性语义
+    val environmentRenderingName: String,
+
+    // Environment 逻辑包名。
+    // 建议使用稳定、简洁的名称，例如：
+    // `Python3`
+    val environmentPackageName: String,
+
+    // Environment 唯一 ID。
+    // 推荐使用稳定高熵值，适合承担 Room 主键和跨版本识别
+    val environmentId: String,
+
+    // Environment 图标引用。
+    // 允许为 `null`
+    // 应存 URI 或路径引用，不应直接内嵌二进制
+    val iconUri: String?,
+
+    // Environment 作者 / 发布者名称
+    val author: String,
+
+    // Environment 短描述。
+    // 适合说明它提供的运行时能力
+    val environmentDescription: String,
+
+    // Environment 声明的最低宿主环境要求。
+    // 这是声明值，不是运行时实时状态
+    val requiredEnvironment: ExecutionContext,
+
+    // Environment 的主要入口或可执行目标。
+    // 应当是包内稳定入口，例如 `python3`
+    val entryPoint: String,
+
+    // 需要追加到 LD_LIBRARY_PATH 的包内相对路径
+    val ldLibraryPath: List<String>,
+
+    // 需要注入到执行环境中的环境变量
+    val env: Map<String, String>
+)
+
+enum class ExecutionContext {
+    LIMITED, PERMISSIVE, ADB, ROOTD
+}
+
+以及它对应的示例 JSON：
+
+{
+  "installedVersion": "3.14.0",
+  "environmentRenderingName": "Python 3",
+  "environmentPackageName": "Python3",
+  "environmentId": "d4f3c2a6a7b44c0fa5a7c6a7b9d8e001",
+  "iconUri": null,
+  "author": "Baidaidai",
+  "environmentDescription": "Provides a Python runtime for Rootless Store plugins.",
+  "requiredEnvironment": "LIMITED",
+  "entryPoint": "python3",
+  "ldLibraryPath": [
+    "lib"
+  ],
+  "env": {
+    "PYTHONUNBUFFERED": "1"
+  }
+}
+
+请你向用户询问需求，并生成合法的 Rootless Store 的 EnvironmentManifest 的 JSON 文本
+```
+
 ## 注入链路
 
 当前 Environment 包的主路径，可以先按下面这条链理解：
