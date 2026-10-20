@@ -52,7 +52,7 @@ interface EnvironmentManifest {
 
     // Environment 声明的最低宿主环境要求。
     // 这是声明值，不是运行时实时状态
-    val requiredEnvironment: HosterOverallStatus
+    val requiredEnvironment: ExecutionContext
 
     // Environment 入口或主要可执行目标。
     // 当前安装时会尝试对它设置可执行权限
@@ -67,7 +67,7 @@ interface EnvironmentManifest {
     val env: Map<String, String>
 }
 
-enum class HosterOverallStatus {
+enum class ExecutionContext {
     LIMITED, PERMISSIVE, ADB, ROOTD
 }
 ```
@@ -118,7 +118,7 @@ enum class HosterOverallStatus {
   Environment 摘要字段。建议说明它提供的运行时能力，例如“提供 Python 解释器与标准库”，而不是写成某个具体插件的功能说明。
 
 - `requiredEnvironment`
-  宿主环境声明字段。当前可序列化值来自 `HosterOverallStatus`，即：
+  宿主环境声明字段。当前可序列化值来自 `ExecutionContext`，即：
   `LIMITED`、`PERMISSIVE`、`ADB`、`ROOTD`。  
   它表达的是这个 Environment 包对宿主能力的要求，不是宿主机当前实时状态。
 
