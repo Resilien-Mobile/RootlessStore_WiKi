@@ -16,7 +16,7 @@ description: Rootless Store 在 client 层面对运行时插件的基本要求�
 ## `PluginManifest`
 
 ```kotlin
-data class PluginManifestLocal(
+data class PluginManifest(
     // 当前安装版本。
     // 建议遵循 SemVer，例如 `1.2.19`
     // 用于版本展示、更新判断和兼容性比较
@@ -33,12 +33,12 @@ data class PluginManifestLocal(
 
     // 插件唯一 ID。
     // 推荐使用稳定高熵值，适合承担 Room 主键和跨版本识别
-    val pluginID: String,
+    val pluginId: String,
 
     // 插件图标引用。
     // 允许为 `null`
     // 应存 URI 或路径引用，不应直接内嵌二进制
-    val iconURI: String?,
+    val iconUri: String?,
 
     // 插件作者 / 发布者名称
     val author: String,
@@ -49,7 +49,7 @@ data class PluginManifestLocal(
 
     // 插件声明的最低宿主环境要求。
     // 这是声明值，不是运行时实时状态
-    val requiredEnvironment: HosterOverallStatus,
+    val requiredEnvironment: ExecutionContext,
 
     // 插件入口。
     // 应当是包内稳定入口，例如 `index.sh`
@@ -61,20 +61,19 @@ data class PluginManifestLocal(
     // 长时间运行或需要持续管理的任务使用 `Daemon`
     val pluginRunModel: PluginRunModel,
 
-    // 是否在 ADB 模式下绕过应用作用域的 Environment 包装。
-    // 默认值为 `false`
-    val bypassEnvironment: Boolean = false,
-
     // 可选 Web UI 入口。
     // 没有 Web UI 时为 `null`
-    val webUIEntryPoint: String? = null,
+    val webUiEntryPoint: String? = null,
 
     // 可选的额外可执行文件声明。
     // 路径应相对插件包根目录
-    val executableFiles: List<String>? = null
+    val executableFiles: List<String>? = null,
+
+    // 可选的插件下载地址。
+    val pluginUrl: String? = null
 )
 
-enum class HosterOverallStatus {
+enum class ExecutionContext {
     LIMITED, PERMISSIVE, ADB, ROOTD
 }
 
@@ -88,16 +87,16 @@ enum class PluginRunModel {
   "installedVersion": "1.0.0",
   "pluginRenderingName": "Test Plugin",
   "pluginPackageName": "com.baidaidai.testplugin",
-  "pluginID": "29bb10c46772264df3c0d0fade57d2eb",
-  "iconURI": "content://rootless_store/plugin_icon/test",
+  "pluginId": "29bb10c46772264df3c0d0fade57d2eb",
+  "iconUri": "content://rootless_store/plugin_icon/test",
   "author": "Baidaidai",
   "pluginDescription": "A test runtime plugin for Rootless Store.",
   "requiredEnvironment": "PERMISSIVE",
   "entryPoint": "index.sh",
   "pluginRunModel": "OneTime",
-  "bypassEnvironment": false,
-  "webUIEntryPoint": null,
-  "executableFiles": null
+  "webUiEntryPoint": null,
+  "executableFiles": null,
+  "pluginUrl": null
 }
 ```
 
@@ -112,10 +111,10 @@ enum class PluginRunModel {
 - `pluginPackageName`
   插件逻辑命名空间。它应稳定、可重复，并尽量符合 Android 包名习惯。即便当前类型系统没有强校验，也不建议使用 `TestPlugin` 这类非规范值。
 
-- `pluginID`
+- `pluginId`
   插件主标识。这个字段的稳定性要求高于 `pluginPackageName`。如果后续 Room 以它作为主键，那么同一插件跨版本升级时不应变化。
 
-- `iconURI`
+- `iconUri`
   图标引用字段。`null` 表示插件没有独立图标。这里存的是引用，不是图标内容本体。引用形式可以是 `content://...`、文件路径或包内相对路径。
 
 - `author`
@@ -125,7 +124,7 @@ enum class PluginRunModel {
   插件摘要字段。建议保持短文本，不应承担长文档或完整 changelog。
 
 - `requiredEnvironment`
-  宿主环境声明字段。当前可序列化值来自 `HosterOverallStatus`，即：
+  宿主环境声明字段。当前可序列化值来自 `ExecutionContext`，即：
   `LIMITED`、`PERMISSIVE`、`ADB`、`ROOTD`。  
   它表达的是插件要求，不是宿主机当前实时状态。
 
@@ -138,26 +137,16 @@ enum class PluginRunModel {
   `OneTime` 适合执行一次后结束的脚本或程序，例如清理、检测、输出一段结果。  
   `Daemon` 适合长时间运行、需要保持后台状态或需要被停止的任务。
 
-- `bypassEnvironment`
-  ADB 执行模式下的环境绕过字段，默认值为 `false`。
-
-  当它为 `false` 时，Rootless Store 会尽量把插件执行放进应用作用域的环境包装中。这样插件可以使用已启用 Environment 注入的 `PATH`、`LD_LIBRARY_PATH` 和环境变量，但某些原生 ADB shell 命令可能会因为进入了应用用户上下文而表现不同。
-
-  当它为 `true` 时，Rootless Store 会在 ADB 模式下绕过这层环境包装，让插件更接近普通 ADB shell 的执行语义。这个模式更适合依赖原生 ADB shell 行为的命令，但插件不能使用 Rootless Store 注入的 Environment 变量。
-
-  一般建议：
-
-  - 如果插件依赖 Environment 包提供的工具链、解释器或环境变量，保持 `false`。
-  - 如果插件主要执行原生 ADB shell 命令，例如 `cmd`、`pm`、`settings` 等，并且不依赖 Environment 注入能力，可以考虑设为 `true`。
-  - 这个字段主要影响 ADB / Shizuku 执行路径；在普通 App Shell 或 Root Shell 场景下，不应把它理解成通用权限开关。
-
-- `webUIEntryPoint`
+- `webUiEntryPoint`
   可选 Web UI 入口字段。没有 Web UI 时应写为 `null`，或在 JSON 中省略。  
   如果插件提供 Web UI，建议指向包内 `index.html` 的相对路径，例如 `webroot/index.html`。
 
 - `executableFiles`
   可选的额外可执行文件声明。没有额外可执行目标时应写为 `null`，或在 JSON 中省略。  
   如果插件包含多个需要执行权限的脚本或二进制文件，可以在这里声明它们相对插件包根目录的路径。
+
+- `pluginUrl`
+  可选的插件下载地址；没有下载地址时可以写为 `null`，或在 JSON 中省略。
 
 
 ## 插件包的组成
@@ -198,7 +187,7 @@ test-plugin.zip
 └── plugin(ELF)
 ```
 
-如果插件提供 Web UI，可以增加一个 Web UI 目录，并在 `webUIEntryPoint` 中声明入口：
+如果插件提供 Web UI，可以增加一个 Web UI 目录，并在 `webUiEntryPoint` 中声明入口：
 
 ```text
 test-plugin.zip
