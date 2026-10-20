@@ -36,12 +36,12 @@ interface EnvironmentManifest {
 
     // Environment 唯一 ID。
     // 推荐使用稳定高熵值，适合承担 Room 主键和跨版本识别
-    val environmentID: String
+    val environmentId: String
 
     // Environment 图标引用。
     // 允许为 `null`
     // 应存 URI 或路径引用，不应直接内嵌二进制
-    val iconURI: String?
+    val iconUri: String?
 
     // Environment 作者 / 发布者名称
     val author: String
@@ -79,8 +79,8 @@ enum class HosterOverallStatus {
   "installedVersion": "3.14.0",
   "environmentRenderingName": "Python 3",
   "environmentPackageName": "Python3",
-  "environmentID": "d4f3c2a6a7b44c0fa5a7c6a7b9d8e001",
-  "iconURI": null,
+  "environmentId": "d4f3c2a6a7b44c0fa5a7c6a7b9d8e001",
+  "iconUri": null,
   "author": "Baidaidai",
   "environmentDescription": "Provides a Python runtime for Rootless Store plugins.",
   "requiredEnvironment": "LIMITED",
@@ -105,11 +105,11 @@ enum class HosterOverallStatus {
 - `environmentPackageName`
   Environment 逻辑命名空间，它应稳定、可重复。Rootless Store 会用它组织本地 Environment 目录。
 
-- `environmentID`
+- `environmentId`
   Environment 主标识。这个字段的稳定性要求高于 `environmentRenderingName`。如果后续 Room 以它作为主键，那么同一个 Environment 跨版本升级时不应变化。
 
-- `iconURI`
-  图标引用字段。`null` 表示没有独立图标。这里存的是引用，不是图标内容本体。引用形式可以是 `content://...`、文件路径或包内相对路径。
+- `iconUri`
+  图标引用字段。`null` 表示没有独立图标。这里存的是引用，不是图标内容本体。引用形式可以是 `assets/index.png`、文件绝对路径或包内相对路径。
 
 - `author`
   作者 / 发布者字段。适合用于展示、来源归属和问题追溯。
