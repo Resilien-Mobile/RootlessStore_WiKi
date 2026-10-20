@@ -148,6 +148,96 @@ enum class PluginRunModel {
 - `pluginUrl`
   可选的插件下载地址；没有下载地址时可以写为 `null`，或在 JSON 中省略。
 
+## Ai Agents 快捷提示词模板
+```text
+这是 RootlessStore的 PluginManifest 字段解析：
+
+data class PluginManifest(
+    // 当前安装版本。
+    // 建议遵循 SemVer，例如 `1.2.19`
+    // 用于版本展示、更新判断和兼容性比较
+    val installedVersion: String,
+
+    // 插件的 UI 展示名称。
+    // 这是渲染字段，不具备唯一性语义
+    val pluginRenderingName: String,
+
+    // 插件逻辑包名。
+    // 建议使用稳定的 Android 风格命名，例如：
+    // `com.baidaidai.testplugin`
+    val pluginPackageName: String,
+
+    // 插件唯一 ID。
+    // 推荐使用稳定高熵值，适合承担 Room 主键和跨版本识别
+    val pluginId: String,
+
+    // 插件图标引用。
+    // 允许为 `null`
+    // 应存 URI 或路径引用，不应直接内嵌二进制
+    val iconUri: String?,
+
+    // 插件作者 / 发布者名称
+    val author: String,
+
+    // 插件短描述。
+    // 适合列表页和详情页摘要展示
+    val pluginDescription: String,
+
+    // 插件声明的最低宿主环境要求。
+    // 这是声明值，不是运行时实时状态
+    val requiredEnvironment: ExecutionContext,
+
+    // 插件入口。
+    // 应当是包内稳定入口，例如 `index.sh`
+    // 或某个二进制入口路径
+    val entryPoint: String,
+
+    // 插件运行模型。
+    // 一次性任务使用 `OneTime`
+    // 长时间运行或需要持续管理的任务使用 `Daemon`
+    val pluginRunModel: PluginRunModel,
+
+    // 可选 Web UI 入口。
+    // 没有 Web UI 时为 `null`
+    val webUiEntryPoint: String? = null,
+
+    // 可选的额外可执行文件声明。
+    // 路径应相对插件包根目录
+    val executableFiles: List<String>? = null,
+
+    // 可选的插件下载地址。
+    val pluginUrl: String? = null
+)
+
+enum class ExecutionContext {
+    LIMITED, PERMISSIVE, ADB, ROOTD
+}
+
+enum class PluginRunModel {
+    OneTime, Daemon
+}
+
+以及它对应的示例 JSON：
+
+{
+  "installedVersion": "1.0.0",
+  "pluginRenderingName": "Test Plugin",
+  "pluginPackageName": "com.baidaidai.testplugin",
+  "pluginId": "29bb10c46772264df3c0d0fade57d2eb",
+  "iconUri": "content://rootless_store/plugin_icon/test",
+  "author": "Baidaidai",
+  "pluginDescription": "A test runtime plugin for Rootless Store.",
+  "requiredEnvironment": "PERMISSIVE",
+  "entryPoint": "index.sh",
+  "pluginRunModel": "OneTime",
+  "webUiEntryPoint": null,
+  "executableFiles": null,
+  "pluginUrl": null
+}
+
+请你向用户询问需求，并生成合法的 Rootless Store 的 PluginManifest 的 JSON 文本
+```
+
 
 ## 插件包的组成
 
