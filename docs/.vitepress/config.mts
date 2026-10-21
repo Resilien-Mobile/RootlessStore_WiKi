@@ -28,16 +28,23 @@ export default defineConfig({
       { text: '心智模型', link: '/articles/why-rootless' },
       { text: '插件开发', link: '/plugin-development/' },
       { text: '使用指引', link: '/user-guide/how-to-use-rootless-store' },
+      { text: '安全模型', link: '/signature/index' },
     ],
 
     sidebar: [
       {
-        text: 'Rootless心智模型',
+        text: 'Rootless 心智模型',
         items: [
           { text: '引出 Rootless 的思考', link: '/articles/why-rootless' },
           { text: 'Rootless 的生态模型', link: '/articles/ecosystem-cluster' },
           { text: 'Sources 与当前想法', link: '/articles/sources-and-ideas' },
           { text: '项目局限性与预期完成时间', link: '/articles/limitations-and-timeline' }
+        ]
+      },
+      {
+        text: 'Rootless 安全模型',
+        items: [
+          { text: '引出 “安全” 的思考', link: '/signature/index' },
         ]
       },
       {
